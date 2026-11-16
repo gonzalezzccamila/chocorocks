@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chocorocks · Pastelería a pedido en Belgrano</title>
+  <meta name="description" content="Pastelería de autor hecha a pedido por dos hermanas. Tortas, pavlovas y cajas para compartir. Pedidos por WhatsApp, retiro en Belgrano.">
+  <meta name="theme-color" content="#EEF8F5">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero" id="inicio">
+    <div class="wrap">
+      <p class="logo">Chocorocks</p>
+      <h1>Pastelería de autor, hecha a pedido por dos hermanas.</h1>
+      <p class="lead">Nada sale de una vitrina: cada torta se hace para vos. Por eso pedimos 72 horas, y por eso vale la espera.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" id="btn-whatsapp" href="https://wa.me/5491165421200" target="_blank" rel="noopener">Escribinos por WhatsApp</a>
+        <a class="btn btn-ghost" id="btn-instagram" href="#" target="_blank" rel="noopener" hidden>Instagram</a>
+      </div>
+      <p class="pickup">Retiro en Belgrano</p>
+      <p class="hours" id="pickup-hours" hidden></p>
+    </div>
+  </header>
+
+  <section class="wrap how" id="como-pedir">
+    <h2>Cómo pedir</h2>
+    <ol>
+      <li>Armá tu pedido acá y mandalo por WhatsApp.</li>
+      <li>Pedí con al menos 72 horas de anticipación.</li>
+      <li>Confirmamos la fecha y la reservás con una seña del 50% por transferencia.</li>
+      <li>Retirás en Belgrano, o lo mandás a buscar por Uber, Rappi o Cabify (envío a cargo del cliente).</li>
+    </ol>
+  </section>
+
+  <nav class="tabs" aria-label="Categorías">
+    <div class="wrap tabs-inner" id="tabs"></div>
+  </nav>
+
+  <main class="wrap" id="catalogo"></main>
+
+  <p class="toast" id="toast" role="status" aria-live="polite" hidden></p>
+
+  <footer class="wrap footer">
+    <p>Chocorocks · Pastelería a pedido · Belgrano, Buenos Aires</p>
+  </footer>
+
+  <!-- Barra del pedido -->
+  <div class="orderbar" id="orderbar" hidden>
+    <button class="orderbar-btn" id="open-order" type="button">
+      <span id="orderbar-count">Tu pedido</span>
+      <span id="orderbar-total">$0</span>
+    </button>
+  </div>
+
+  <!-- Elegir opciones -->
+  <dialog class="sheet" id="config" aria-labelledby="config-title">
+    <form method="dialog" class="sheet-inner" id="config-form">
+      <div class="sheet-head">
+        <h2 id="config-title"></h2>
+        <button class="close" type="submit" value="cancel" aria-label="Cerrar">Cerrar</button>
+      </div>
+      <p class="sheet-desc" id="config-desc"></p>
+      <p class="sheet-from" id="config-from"></p>
+      <div id="config-steps"></div>
+      <div class="sheet-foot">
+        <div class="qty" aria-label="Cantidad">
+          <button type="button" class="qty-btn" data-qty="-1" aria-label="Uno menos">−</button>
+          <output id="config-qty">1</output>
+          <button type="button" class="qty-btn" data-qty="1" aria-label="Uno más">+</button>
+        </div>
+        <button class="btn btn-primary btn-grow" type="button" id="config-add">Agregar · <span id="config-total">$0</span></button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Pedido -->
+  <dialog class="sheet" id="order" aria-labelledby="order-title">
+    <form method="dialog" class="sheet-inner">
+      <div class="sheet-head">
+        <h2 id="order-title">Tu pedido</h2>
+        <button class="close" type="submit" aria-label="Cerrar">Cerrar</button>
+      </div>
+      <ul class="order-list" id="order-list"></ul>
+      <div class="order-total"><span>Total</span><strong id="order-total">$0</strong></div>
+
+      <div class="field">
+        <label for="order-date">¿Para qué fecha?</label>
+        <input type="date" id="order-date" aria-describedby="date-hint">
+        <p class="hint" id="date-hint">Con al menos 72 horas de anticipación.</p>
+      </div>
+
+      <fieldset class="step">
+        <legend>¿Cómo lo recibís?</legend>
+        <label class="opt">
+          <input type="radio" name="delivery" value="Retiro en Belgrano" checked>
+          <span class="opt-text"><span>Retiro en Belgrano</span></span>
+        </label>
+        <label class="opt">
+          <input type="radio" name="delivery" value="Envío por app (Uber, Rappi o Cabify), a cargo del cliente">
+          <span class="opt-text"><span>Envío por app</span><span class="opt-sub">Uber, Rappi o Cabify (envío a cargo del cliente)</span></span>
+        </label>
+      </fieldset>
+
+      <div class="field">
+        <label for="order-note">Comentario <span class="hint-inline">(opcional)</span></label>
+        <textarea id="order-note" rows="3" maxlength="400" placeholder="Por ejemplo: es para un cumpleaños, sin nueces por alergia"></textarea>
+      </div>
+
+      <p class="order-note">Los precios incluyen todo. Se reserva con una seña del 50% por transferencia.</p>
+      <p class="form-error" id="order-error" role="alert" hidden></p>
+      <a class="btn btn-primary btn-block" id="send-order" href="#" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+    </form>
+  </dialog>
+
+  <script src="catalogo-respaldo.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
