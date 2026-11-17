@@ -17,7 +17,7 @@ const CATEGORIES = [
 ];
 const TOP = { name: "Nuestras favoritas", id: "favoritas", intro: "Si es tu primera vez, arrancá por acá." };
 const SPECIAL = { name: "Sin TACC, veganas y sin azúcar", id: "especiales", intro: "Cada una lleva su etiqueta, así sabés qué estás pidiendo." };
-const BUILDER = { id: "arma-tu-torta", tab: "Armá tu torta" };
+const BUILDER = { id: "arma-tu-torta", tab: "Torta para tu evento", title: "Armá tu torta para tu evento" };
 
 /* ---------- utilidades ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -194,12 +194,12 @@ function builderHTML(p) {
       <button class="builder" type="button" data-product="${esc(p.id)}">
         ${p.foto ? `<span class="builder-photo"><img src="${esc(photoSrc(p))}" alt="" onerror="this.parentNode.remove()"></span>` : ""}
         <span class="builder-body">
-          <span class="kicker">Para cumpleaños y festejos</span>
-          <span class="builder-title">Armá tu torta</span>
-          <span class="builder-desc">Elegís el sabor del bizcochuelo, los rellenos y la decoración. Si la mesa es grande, va en torre de 2 pisos.</span>
+          <span class="kicker">Torta personalizada</span>
+          <span class="builder-title">${BUILDER.title}</span>
+          <span class="builder-desc">Contanos qué festejás y la armamos a tu medida: elegís el sabor, los rellenos y la decoración. Si la mesa es grande, va en torre de 2 pisos.</span>
           <span class="builder-foot">
             <span class="price"><small>desde</small> ${money(minPrice(p))}</span>
-            <span class="btn btn-primary">Armar mi torta</span>
+            <span class="btn btn-primary">Empezar</span>
           </span>
         </span>
       </button>
@@ -228,13 +228,16 @@ function render() {
     $("#tabs").innerHTML = "";
     return;
   }
-  main.innerHTML = (builder ? builderHTML(builder) : "") + sections.map((s) => `
+  const sectionHTML = (s) => `
     <section class="cat" id="${esc(s.id)}">
       <h2>${esc(s.name)} <span class="count">(${s.list.length})</span></h2>
       ${s.intro ? `<p class="cat-intro">${esc(s.intro)}</p>` : ""}
       ${listHTML(s.list, s.carousel)}
-    </section>`).join("");
-  const tabs = [...(builder ? [{ id: BUILDER.id, name: BUILDER.tab }] : []), ...sections];
+    </section>`;
+  // Orden: primero las favoritas (las clásicas), después la torta personalizada y el resto.
+  const first = sections[0] && sections[0].carousel ? [sections.shift()] : [];
+  main.innerHTML = first.map(sectionHTML).join("") + (builder ? builderHTML(builder) : "") + sections.map(sectionHTML).join("");
+  const tabs = [...first, ...(builder ? [{ id: BUILDER.id, name: BUILDER.tab }] : []), ...sections];
   $("#tabs").innerHTML = tabs.map((s) => `<a class="tab" href="#${esc(s.id)}">${esc(s.name)}</a>`).join("");
 }
 
@@ -391,7 +394,7 @@ function openConfig(p) {
   const sel = { torre: false, size: p.cfgSizes[0] || null, sabor: null, capas: null, rellenos: [], deco: null, sizeRow: null, touchedRellenos: false };
   if (!p.decos.length && p.sizes.length) sel.sizeRow = p.sizes[0].id;
   current = { product: p, sel, qty: 1 };
-  $("#config-title").textContent = p.builder ? "Armá tu torta" : p.name;
+  $("#config-title").textContent = p.builder ? BUILDER.title : p.name;
   $("#config-desc").textContent = p.desc;
   const multi = p.base.length > 1;
   const meta = multi ? "" : metaText(p);
