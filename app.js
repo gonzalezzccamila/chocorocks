@@ -14,13 +14,12 @@ const CONFIG = {
   portadaAlt: "Logo CR by Chocorocks sobre una mesa de madera, con cookies de chocolate",
 
   // Línea debajo del nombre, sobre quién hace las tortas. Una sola línea. Vacío = no se muestra.
-  firma: "",
+  firma: "Por Victoria, pastelera profesional con años de oficio y experiencia.",
 
   // "Qué pasa después", debajo del botón de WhatsApp en el pedido. Vacío ([]) = no se muestra.
-  // PENDIENTE: completar [PLAZO] y [MOMENTO] antes de publicar.
   pasosDespues: [
-    "Te respondemos [PLAZO] para confirmar la fecha.",
-    "Reservás con una seña del 50% por transferencia [MOMENTO].",
+    "Te respondemos en menos de 24 horas para confirmar la fecha.",
+    "Reservás con una seña del 50% por transferencia en las 5 horas siguientes a la confirmación.",
     "Retirás en Belgrano o lo mandás a buscar por app.",
   ],
 };
