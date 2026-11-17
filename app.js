@@ -15,8 +15,9 @@ const CATEGORIES = [
   { name: "Pavlovas", id: "pavlovas", intro: "Merengue crocante por fuera y suave por dentro." },
   { name: "Por unidad", id: "por-unidad", intro: "En cajas de 6 o de 12. Para regalar, o para no compartir." },
 ];
-const TOP = { name: "Para empezar", id: "para-empezar", kicker: "Nuestras favoritas", intro: "Si es tu primera vez, arrancá por acá." };
+const TOP = { name: "Nuestras favoritas", id: "favoritas", intro: "Si es tu primera vez, arrancá por acá." };
 const SPECIAL = { name: "Sin TACC, veganas y sin azúcar", id: "especiales", intro: "Cada una lleva su etiqueta, así sabés qué estás pidiendo." };
+const BUILDER = { id: "arma-tu-torta", tab: "Armá tu torta" };
 
 /* ---------- utilidades ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -25,6 +26,8 @@ const money = (n) => "$" + Math.round(n).toLocaleString("es-AR");
 const lowerFirst = (s) => (s ? s.charAt(0).toLowerCase() + s.slice(1) : s);
 const norm = (s) => String(s ?? "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 const slug = (s) => norm(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const uniq = (list) => [...new Set(list)];
+const cm = (s) => parseFloat(s) || 0;
 
 function parseCSV(text) {
   const rows = [];
@@ -51,12 +54,14 @@ function parseCSV(text) {
 function parsePrice(raw) {
   let s = String(raw ?? "").replace(/[^\d.,]/g, "");
   if (!s) return 0;
-  const lastDot = s.lastIndexOf("."), lastComma = s.lastIndexOf(",");
-  const lastSep = Math.max(lastDot, lastComma);
+  const lastSep = Math.max(s.lastIndexOf("."), s.lastIndexOf(","));
   // Si el último separador tiene 1 o 2 dígitos después, son decimales: se cortan.
   if (lastSep >= 0 && /^\d{1,2}$/.test(s.slice(lastSep + 1))) s = s.slice(0, lastSep);
   return Math.round(Number(s.replace(/[.,]/g, ""))) || 0;
 }
+
+/* Tipos de opción que pueden valer $0 porque se suman a otra. */
+const ADDON = /pisos|capas|relleno|sabor|torre/i;
 
 function toCatalog(text) {
   const table = parseCSV(text || "");
@@ -80,7 +85,7 @@ function toCatalog(text) {
       disp: norm(get(r, c.disp)), tags: get(r, c.tags).split(",").map((t) => t.trim()).filter(Boolean),
       id: get(r, c.id), foto: get(r, c.foto), rank: Number(get(r, c.rank)) || 0,
     }))
-    .filter((r) => r.prod && r.id && (r.disp === "si") && (r.precio > 0 || /pisos|relleno/i.test(r.tipo)));
+    .filter((r) => r.prod && r.id && r.disp === "si" && (r.precio > 0 || ADDON.test(r.tipo)));
 }
 
 /* ---------- modelo ---------- */
@@ -90,8 +95,10 @@ const BY_ID = new Map();
 function kindOf(t) {
   const n = norm(t);
   if (n.startsWith("decoracion")) return "deco";
-  if (n.startsWith("pisos")) return "pisos";
+  if (n.startsWith("pisos") || n.startsWith("capas")) return "capas";
   if (n.startsWith("relleno")) return "relleno";
+  if (n.startsWith("sabor")) return "sabor";
+  if (n.startsWith("torre")) return "torre";
   if (n.startsWith("tamano") || n.startsWith("caja")) return "size";
   return "unica";
 }
@@ -114,15 +121,15 @@ function buildProducts(rows) {
   const byRank = (a, b) => (a.rank || Infinity) - (b.rank || Infinity) || order.indexOf(a) - order.indexOf(b);
   return order.sort(byRank).map((p) => {
     p.id = slug(p.name);
-    p.decos = p.rows.filter((r) => r.kind === "deco");
-    p.pisos = p.rows.filter((r) => r.kind === "pisos");
-    p.rellenos = p.rows.filter((r) => r.kind === "relleno");
-    p.sizes = p.rows.filter((r) => r.kind === "size");
-    p.unica = p.rows.filter((r) => r.kind === "unica");
-    p.decoSizes = [...new Set(p.decos.map((r) => r.size))].sort((a, b) => (parseFloat(a) || 0) - (parseFloat(b) || 0));
-    p.sizes.sort((a, b) => (/\bcm$/.test(a.size) && /\bcm$/.test(b.size) ? parseFloat(a.size) - parseFloat(b.size) : 0));
+    const of = (k) => p.rows.filter((r) => r.kind === k);
+    p.decos = of("deco"); p.capas = of("capas"); p.rellenos = of("relleno"); p.sabores = of("sabor");
+    p.torre = of("torre")[0] || null;
+    p.sizes = of("size"); p.unica = of("unica");
+    p.cfgSizes = uniq(p.decos.map((r) => r.size)).sort((a, b) => cm(a) - cm(b));
+    p.sizes.sort((a, b) => (/\bcm$/.test(a.size) && /\bcm$/.test(b.size) ? cm(a.size) - cm(b.size) : 0));
     p.base = p.decos.length ? p.decos : p.sizes.length ? p.sizes : p.unica;
-    p.hasOptions = p.base.length > 1 || p.pisos.length > 0;
+    p.builder = p.rellenos.length > 0;
+    if (!(p.torre && p.cfgSizes.length > 1)) p.torre = null;
     return p;
   }).filter((p) => p.base.length);
 }
@@ -130,226 +137,281 @@ function buildProducts(rows) {
 function minPrice(p) { return Math.min(...p.base.map((r) => r.precio)); }
 
 function metaText(p) {
-  if (p.decoSizes.length > 1) {
-    return p.decoSizes.map((s) => {
-      const r = p.decos.find((d) => d.size === s);
-      return r && r.por ? `${s} (${r.por})` : s;
-    }).join(" o ");
-  }
-  if (p.pisos.length && p.decos[0]) return [p.decos[0].size, p.decos[0].por].filter(Boolean).join(" · ");
-  if (p.sizes.length > 1 && p.sizes.every((r) => /\bcm$/.test(r.size))) {
-    return p.sizes.map((r) => (r.por ? `${r.size} (${r.por})` : r.size)).join(" o ");
-  }
-  if (p.sizes.length) return p.sizes.map((r) => r.size).join(" · ");
+  if (p.cfgSizes.length > 1) return p.cfgSizes.join(" o ") + (p.torre ? " · o en torre" : "");
+  if (p.sizes.length > 1 && p.sizes.every((r) => /\bcm$/.test(r.size))) return p.sizes.map((r) => r.size).join(" o ");
+  if (p.sizes.length > 1) return p.sizes.map((r) => r.size).join(" o ").replace(/ o Caja de /g, " o de ");
   const r = p.base[0];
   return [/^enter/i.test(r.size) ? "" : r.size, r.por].filter(Boolean).join(" · ");
 }
 
 /* ---------- catálogo ---------- */
-function photoHTML(p) {
-  if (!p.foto) return "";
-  const src = /^https?:\/\//.test(p.foto) ? p.foto : "fotos/" + p.foto;
-  return `<div class="card-photo"><img src="${esc(src)}" alt="${esc(p.name)}" loading="lazy" onerror="this.parentNode.remove()"></div>`;
-}
+const photoSrc = (p) => (/^https?:\/\//.test(p.foto) ? p.foto : "fotos/" + p.foto);
+const priceHTML = (p) => (p.base.length > 1 ? `<small>desde</small> ${money(minPrice(p))}` : money(p.base[0].precio));
 
-function cardHTML(p) {
-  const price = p.base.length > 1 ? `<small>desde</small> ${money(minPrice(p))}` : money(p.base[0].precio);
-  const tags = p.tags.length ? `<div class="tags">${p.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>` : "";
+function tileHTML(p) {
+  const photo = p.foto
+    ? `<img src="${esc(photoSrc(p))}" alt="" loading="lazy" onerror="this.remove()">`
+    : "";
+  const tags = p.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("");
   const meta = metaText(p);
   return `
-    <article class="card">
-      ${photoHTML(p)}
-      ${tags}
-      <h3>${esc(p.name)}</h3>
-      ${p.desc ? `<p class="card-desc">${esc(p.desc)}</p>` : ""}
-      ${meta ? `<p class="card-meta">${esc(meta)}</p>` : ""}
-      <div class="card-foot">
-        <span class="price">${price}</span>
-        <button class="btn ${p.hasOptions ? "btn-ghost" : "btn-primary"}" type="button" data-product="${esc(p.id)}">${p.hasOptions ? "Elegir" : "Agregar"}</button>
-      </div>
-    </article>`;
+    <button class="tile" type="button" data-product="${esc(p.id)}">
+      <span class="tile-photo${p.foto ? "" : " tile-photo-empty"}">${photo}${tags ? `<span class="tile-tags">${tags}</span>` : ""}</span>
+      <span class="tile-body">
+        <span class="tile-name">${esc(p.name)}</span>
+        ${meta ? `<span class="tile-meta">${esc(meta)}</span>` : ""}
+        <span class="price">${priceHTML(p)}</span>
+      </span>
+    </button>`;
 }
 
-function photoSrc(p) { return /^https?:\/\//.test(p.foto) ? p.foto : "fotos/" + p.foto; }
-
-function rowHTML(p) {
-  const price = p.base.length > 1 ? `<small>desde</small> ${money(minPrice(p))}` : money(p.base[0].precio);
-  const tags = p.tags.length ? `<span class="tags">${p.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</span>` : "";
-  const meta = metaText(p);
-  const thumb = p.foto ? `<img class="row-thumb" src="${esc(photoSrc(p))}" alt="" loading="lazy" onerror="this.remove()">` : "";
+function builderHTML(p) {
   return `
-    <li class="row">
-      ${thumb}
-      <div class="row-text">
-        <h3>${esc(p.name)}</h3>
-        ${meta ? `<p class="card-meta">${esc(meta)}</p>` : ""}
-        ${tags}
-        <p class="price">${price}</p>
-      </div>
-      <button class="btn ${p.hasOptions ? "btn-ghost" : "btn-primary"} btn-small" type="button" data-product="${esc(p.id)}" aria-label="${p.hasOptions ? "Elegir" : "Agregar"} ${esc(p.name)}">${p.hasOptions ? "Elegir" : "Agregar"}</button>
-    </li>`;
+    <section class="cat" id="${BUILDER.id}">
+      <button class="builder" type="button" data-product="${esc(p.id)}">
+        ${p.foto ? `<span class="builder-photo"><img src="${esc(photoSrc(p))}" alt="" onerror="this.parentNode.remove()"></span>` : ""}
+        <span class="builder-body">
+          <span class="kicker">Para cumpleaños y festejos</span>
+          <span class="builder-title">Armá tu torta</span>
+          <span class="builder-desc">Elegís el sabor del bizcochuelo, los rellenos y la decoración. Si la mesa es grande, va en torre de 2 pisos.</span>
+          <span class="builder-foot">
+            <span class="price"><small>desde</small> ${money(minPrice(p))}</span>
+            <span class="btn btn-primary">Armar mi torta</span>
+          </span>
+        </span>
+      </button>
+    </section>`;
 }
 
 function render() {
   const main = $("#catalogo");
-  // Arriba, de 4 a 6 destacadas en tarjeta con foto. El resto, en lista compacta.
-  const top = PRODUCTS.filter((p) => p.rank > 0).slice(0, 6);
-  const rest = PRODUCTS.filter((p) => !top.includes(p));
+  const builder = PRODUCTS.find((p) => p.builder);
+  const top = PRODUCTS.filter((p) => p.rank > 0 && p !== builder).slice(0, 6);
+  const rest = PRODUCTS.filter((p) => p !== builder);
   const special = rest.filter((p) => p.tags.length);
   const regular = rest.filter((p) => !p.tags.length);
   const sections = [];
-  if (top.length) sections.push({ ...TOP, list: top, featured: true });
+  if (top.length) sections.push({ ...TOP, list: top, carousel: true });
   const known = new Set(CATEGORIES.map((c) => c.name));
-  const extra = [...new Set(regular.map((p) => p.cat))].filter((c) => !known.has(c))
-    .map((name) => ({ name, id: slug(name), intro: "" }));
+  const extra = uniq(regular.map((p) => p.cat)).filter((c) => !known.has(c)).map((name) => ({ name, id: slug(name), intro: "" }));
   for (const cat of [...CATEGORIES, ...extra]) {
     const list = regular.filter((p) => p.cat === cat.name);
     if (list.length) sections.push({ ...cat, list });
   }
   if (special.length) sections.push({ ...SPECIAL, list: special });
 
-  if (!sections.length) {
+  if (!sections.length && !builder) {
     main.innerHTML = `<p class="loading">Estamos actualizando el catálogo. Escribinos por WhatsApp y te contamos qué hay.</p>`;
     $("#tabs").innerHTML = "";
     return;
   }
-  main.innerHTML = sections.map((s) => `
+  main.innerHTML = (builder ? builderHTML(builder) : "") + sections.map((s) => `
     <section class="cat" id="${esc(s.id)}">
-      ${s.kicker ? `<p class="kicker">${esc(s.kicker)}</p>` : ""}
-      <h2>${esc(s.name)}</h2>
+      <h2>${esc(s.name)} <span class="count">(${s.list.length})</span></h2>
       ${s.intro ? `<p class="cat-intro">${esc(s.intro)}</p>` : ""}
-      ${s.featured
-        ? `<div class="grid">${s.list.map(cardHTML).join("")}</div>`
-        : `<ul class="rows">${s.list.map(rowHTML).join("")}</ul>`}
+      <div class="${s.carousel ? "carousel" : "grid"}">${s.list.map(tileHTML).join("")}</div>
     </section>`).join("");
-  $("#tabs").innerHTML = sections.map((s) => `<a class="tab" href="#${esc(s.id)}">${esc(s.name)}</a>`).join("");
+  const tabs = [...(builder ? [{ id: BUILDER.id, name: BUILDER.tab }] : []), ...sections];
+  $("#tabs").innerHTML = tabs.map((s) => `<a class="tab" href="#${esc(s.id)}">${esc(s.name)}</a>`).join("");
 }
 
-/* ---------- elegir opciones ---------- */
-let current = null; // { product, sel: {deco, size, pisos, rellenos: []}, qty }
+/* ---------- elegir opciones ----------
+   La selección se guarda por nombre de opción, no por ID: así la misma elección
+   vale para 22 cm, 26 cm o la torre (que suma las dos). */
+let current = null; // { product, sel, qty }
 
-function rellenoCount(sel) {
-  const r = BY_ID.get(sel.pisos);
-  const n = r ? parseInt(r.nombre, 10) || parseInt(r.size, 10) : 2;
-  return Math.max(1, (n || 2) - 1);
+const LIST = { deco: "decos", capas: "capas", relleno: "rellenos", sabor: "sabores" };
+const activeSizes = (p, sel) => (sel.torre ? [...p.cfgSizes].reverse() : [sel.size]);
+const findRow = (p, kind, size, nombre) => p[LIST[kind]].find((r) => r.size === size && r.nombre === nombre);
+const groupPrice = (p, kind, nombre, sizes) => sizes.reduce((s, z) => s + (findRow(p, kind, z, nombre)?.precio || 0), 0);
+
+/* Opciones de un grupo que existen en todos los tamaños activos, de la más barata a la más cara. */
+function optionNames(p, kind, sizes) {
+  const names = uniq(p[LIST[kind]].map((r) => r.nombre)).filter((n) => sizes.every((z) => findRow(p, kind, z, n)));
+  return names.map((n, i) => ({ n, i, price: groupPrice(p, kind, n, sizes) }))
+    .sort((a, b) => a.price - b.price || a.i - b.i);
 }
 
-/* Pisos y rellenos dependen del tamaño elegido cuando la torta tiene varios. */
-function sizeRows(p, sel, list) {
-  if (p.decoSizes.length < 2) return list;
-  const same = list.filter((r) => r.size === sel.size);
-  return same.length ? same : list;
+function rellenoCount(p, sel) {
+  if (!p.rellenos.length) return 0;
+  if (!p.capas.length) return 1;
+  return Math.max(1, (parseInt(sel.capas, 10) || 2) - 1);
+}
+
+/* Deja la selección siempre válida para los tamaños activos. */
+function normalize() {
+  const { product: p, sel } = current;
+  if (!p.decos.length) return;
+  if (!p.cfgSizes.includes(sel.size)) sel.size = p.cfgSizes[0];
+  if (!p.torre) sel.torre = false;
+  const sizes = activeSizes(p, sel);
+  for (const kind of ["deco", "sabor", "capas"]) {
+    const opts = optionNames(p, kind, sizes);
+    if (opts.length && !opts.some((o) => o.n === sel[kind])) sel[kind] = opts[0].n;
+  }
+  const rell = optionNames(p, "relleno", sizes);
+  const n = rellenoCount(p, sel);
+  sel.rellenos = sel.rellenos.filter((x) => rell.some((o) => o.n === x)).slice(0, n);
+  if (!sel.touchedRellenos) while (sel.rellenos.length < n && rell.length) sel.rellenos.push(sel.rellenos[0] || rell[0].n);
+}
+
+function missingRellenos() {
+  const { product: p, sel } = current;
+  return p.decos.length ? rellenoCount(p, sel) - sel.rellenos.length : 0;
 }
 
 function selectedIds() {
   const { product: p, sel } = current;
-  if (p.pisos.length) return [sel.deco, sel.pisos, ...sel.rellenos.slice(0, rellenoCount(sel))].filter(Boolean);
-  if (p.decos.length) return [sel.deco].filter(Boolean);
-  return [sel.size || p.base[0].id];
+  if (!p.decos.length) return [sel.sizeRow || p.base[0].id];
+  const ids = [];
+  for (const z of activeSizes(p, sel)) {
+    for (const kind of ["deco", "sabor", "capas"]) {
+      const r = sel[kind] && findRow(p, kind, z, sel[kind]);
+      if (r) ids.push(r.id);
+    }
+    for (const n of sel.rellenos) { const r = findRow(p, "relleno", z, n); if (r) ids.push(r.id); }
+  }
+  if (sel.torre && p.torre) ids.push(p.torre.id);
+  return ids;
 }
 
-function optHTML(name, r, label, sub, priceText, checked) {
+const plus = (n) => (n > 0 ? "+" + money(n) : "incluido");
+const decoLabel = (n) => n.replace(/^decoraci[oó]n\s+/i, "").replace(/^./, (c) => c.toUpperCase());
+const porciones = (p, sizes) => {
+  const total = sizes.reduce((s, z) => s + (parseInt(p.decos.find((r) => r.size === z)?.por, 10) || 0), 0);
+  return total ? `${total} porciones` : "";
+};
+
+function radioHTML(name, value, label, sub, priceText, checked) {
   return `
     <label class="opt">
-      <input type="radio" name="${name}" value="${esc(r.id)}" ${checked ? "checked" : ""}>
+      <input type="radio" name="${name}" value="${esc(value)}" ${checked ? "checked" : ""}>
       <span class="opt-text"><span>${esc(label)}</span>${sub ? `<span class="opt-sub">${esc(sub)}</span>` : ""}</span>
-      <span class="opt-price">${esc(priceText)}</span>
+      ${priceText ? `<span class="opt-price">${esc(priceText)}</span>` : ""}
     </label>`;
 }
-const plus = (n) => (n > 0 ? "+" + money(n) : "incluido");
-const decoLabel = (r) => r.nombre.replace(/^decoraci[oó]n\s+/i, "").replace(/^./, (c) => c.toUpperCase());
 
 function stepsHTML() {
   const { product: p, sel } = current;
   const out = [];
-  let n = 1;
-  const step = (title, hint, body) => `<fieldset class="step"><legend>${n++}. ${esc(title)}${hint ? `<span>${esc(hint)}</span>` : ""}</legend>${body}</fieldset>`;
+  const step = (title, hint, body) => `<fieldset class="step"><legend>${esc(title)}${hint ? `<span>${esc(hint)}</span>` : ""}</legend><div class="opts">${body}</div></fieldset>`;
 
-  // Todas las opciones se muestran como "+$X" sobre el precio "desde".
-  const from = minPrice(p);
-  const minOf = (rows) => Math.min(...rows.map((d) => d.precio));
-  // Orden de los pasos: tamaño, pisos, relleno y, al final, decoración.
-  let decoBase = from;
-  if (p.decos.length && p.decoSizes.length > 1) {
-    out.push(step("Tamaño", "", p.decoSizes.map((s) => {
-      const ds = p.decos.filter((d) => d.size === s);
-      return optHTML("size", { id: s }, s, ds[0].por, plus(minOf(ds) - from), sel.size === s);
-    }).join("")));
-    decoBase = minOf(p.decos.filter((d) => d.size === sel.size));
-  }
-  if (p.pisos.length) {
-    out.push(step("Pisos", "", sizeRows(p, sel, p.pisos).map((r) => optHTML("pisos", r, r.nombre, "", plus(r.precio), sel.pisos === r.id)).join("")));
-    const count = rellenoCount(sel);
-    const rellenos = sizeRows(p, sel, p.rellenos);
-    for (let i = 0; i < count; i++) {
-      out.push(step(count > 1 ? `Relleno ${i + 1}` : "Relleno", count > 1 ? (i === 0 ? "capa de abajo" : "capa de arriba") : "",
-        rellenos.map((r) => optHTML("relleno" + i, r, r.nombre, "", plus(r.precio), sel.rellenos[i] === r.id)).join("")));
+  if (!p.decos.length) {
+    if (p.sizes.length > 1) {
+      const cajas = p.sizes.every((r) => /^caja/i.test(norm(r.tipo)));
+      out.push(step(cajas ? "Caja" : "Tamaño", "",
+        p.sizes.map((r) => radioHTML("sizeRow", r.id, r.size, r.por, money(r.precio), sel.sizeRow === r.id)).join("")));
     }
+    return out.join("");
   }
-  if (p.decos.length) {
-    const decos = p.decoSizes.length > 1 ? p.decos.filter((d) => d.size === sel.size) : p.decos;
-    out.push(step("Decoración", "", decos.map((r) => optHTML("deco", r, decoLabel(r), "", plus(r.precio - decoBase), sel.deco === r.id)).join("")));
+
+  const sizes = activeSizes(p, sel);
+  const minDeco = (zs) => Math.min(...optionNames(p, "deco", zs).map((o) => o.price));
+
+  if (p.torre) {
+    const all = [...p.cfgSizes].reverse();
+    out.push(step("Formato", "",
+      radioHTML("formato", "simple", "Un piso", p.cfgSizes.join(" o "), "desde " + money(minDeco([p.cfgSizes[0]])), !sel.torre) +
+      radioHTML("formato", "torre", "Torre de 2 pisos", `${all.join(" abajo y ")} arriba · ${porciones(p, all)}`,
+        "desde " + money(minDeco(all) + p.torre.precio), sel.torre)));
   }
-  if (!p.decos.length && p.sizes.length > 1) {
-    out.push(step(p.sizes.every((r) => r.kind === "size" && /^caja/i.test(norm(r.tipo))) ? "Caja" : "Tamaño", "",
-      p.sizes.map((r) => optHTML("sizeRow", r, r.size, r.por, plus(r.precio - from), sel.size === r.id)).join("")));
+  if (!sel.torre && p.cfgSizes.length > 1) {
+    out.push(step("Tamaño", "",
+      p.cfgSizes.map((z) => radioHTML("size", z, z, porciones(p, [z]), "desde " + money(minDeco([z])), sel.size === z)).join("")));
   }
+
+  const group = (kind, title, label = (n) => n) => {
+    const opts = optionNames(p, kind, sizes);
+    if (opts.length < 2) return;
+    out.push(step(title, "", opts.map((o) => radioHTML(kind, o.n, label(o.n), "", plus(o.price - opts[0].price), sel[kind] === o.n)).join("")));
+  };
+  group("sabor", "Sabor del bizcochuelo");
+  group("capas", "Capas");
+
+  const rell = optionNames(p, "relleno", sizes);
+  const n = rellenoCount(p, sel);
+  if (rell.length > 1 && n === 1) {
+    out.push(step("Relleno", "", rell.map((o) => radioHTML("relleno", o.n, o.n, "", plus(o.price), sel.rellenos[0] === o.n)).join("")));
+  } else if (rell.length > 1) {
+    const full = sel.rellenos.length >= n;
+    out.push(step("Rellenos", `Elegí ${n}. Podés repetir.`, rell.map((o) => {
+      const count = sel.rellenos.filter((x) => x === o.n).length;
+      return `
+        <div class="opt opt-count${count ? " is-on" : ""}">
+          <span class="opt-text"><span>${esc(o.n)}</span><span class="opt-sub">${o.price > 0 ? "+" + money(o.price) + " por capa" : "incluido"}</span></span>
+          <span class="counter">
+            ${count ? `<button type="button" class="counter-btn" data-relleno="${esc(o.n)}" data-step="-1" aria-label="Quitar ${esc(o.n)}">−</button><output>${count}</output>` : ""}
+            <button type="button" class="counter-btn${full ? " is-swap" : ""}" data-relleno="${esc(o.n)}" data-step="1" aria-label="Agregar ${esc(o.n)}">+</button>
+          </span>
+        </div>`;
+    }).join("")));
+  }
+  group("deco", "Decoración", decoLabel);
   return out.join("");
 }
 
 function unitPrice(ids) { return ids.reduce((sum, id) => sum + (BY_ID.get(id)?.precio || 0), 0); }
 
 function refreshConfig() {
+  normalize();
   $("#config-steps").innerHTML = stepsHTML();
   $("#config-qty").textContent = current.qty;
-  $("#config-total").textContent = money(unitPrice(selectedIds()) * current.qty);
+  const missing = missingRellenos();
+  const add = $("#config-add");
+  add.disabled = missing > 0;
+  add.innerHTML = missing > 0
+    ? `Te falta elegir ${missing} ${missing === 1 ? "relleno" : "rellenos"}`
+    : `Agregar · <span>${money(unitPrice(selectedIds()) * current.qty)}</span>`;
 }
 
 function openConfig(p) {
-  const sel = { deco: null, size: null, pisos: null, rellenos: [] };
-  if (p.decos.length) {
-    if (p.decoSizes.length > 1) sel.size = p.decoSizes[0];
-    sel.deco = (p.decoSizes.length > 1 ? p.decos.find((d) => d.size === sel.size) : p.decos[0]).id;
-  }
-  if (p.pisos.length) {
-    sel.pisos = sizeRows(p, sel, p.pisos)[0].id;
-    const r0 = sizeRows(p, sel, p.rellenos)[0]?.id;
-    sel.rellenos = [r0, r0].filter(Boolean);
-  }
-  if (!p.decos.length && p.sizes.length) sel.size = p.sizes[0].id;
+  const sel = { torre: false, size: p.cfgSizes[0] || null, sabor: null, capas: null, rellenos: [], deco: null, sizeRow: null, touchedRellenos: false };
+  if (!p.decos.length && p.sizes.length) sel.sizeRow = p.sizes[0].id;
   current = { product: p, sel, qty: 1 };
-  $("#config-title").textContent = p.name;
+  $("#config-title").textContent = p.builder ? "Armá tu torta" : p.name;
   $("#config-desc").textContent = p.desc;
-  $("#config-from").textContent = p.hasOptions ? "Desde " + money(minPrice(p)) : "";
+  const multi = p.base.length > 1;
+  const meta = multi ? "" : metaText(p);
+  $("#config-from").textContent = (multi ? "Desde " + money(minPrice(p)) : money(p.base[0].precio)) + (meta ? " · " + meta : "");
+  const photo = $("#config-photo");
+  photo.hidden = !p.foto;
+  if (p.foto) { const img = photo.querySelector("img"); img.src = photoSrc(p); img.alt = p.name; }
+  $("#config-tags").innerHTML = p.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("");
   refreshConfig();
   showDialog($("#config"));
+  $("#config").scrollTop = 0;
 }
 
 $("#config-steps").addEventListener("change", (e) => {
   const t = e.target;
   if (!current || t.type !== "radio") return;
+  const { sel } = current;
+  if (t.name === "formato") sel.torre = t.value === "torre";
+  else if (t.name === "relleno") sel.rellenos = [t.value];
+  else if (t.name in sel) sel[t.name] = t.value;
+  if (t.name === "capas") sel.touchedRellenos = false; // al cambiar las capas se completa solo
+  refreshConfig();
+});
+
+$("#config-steps").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-relleno]");
+  if (!b || !current) return;
   const { product: p, sel } = current;
-  if (t.name === "size") {
-    sel.size = t.value;
-    const prev = BY_ID.get(sel.deco);
-    const match = p.decos.find((d) => d.size === sel.size && prev && d.nombre === prev.nombre) || p.decos.find((d) => d.size === sel.size);
-    sel.deco = match?.id || null;
-    // Mismos pisos y rellenos, en el tamaño nuevo.
-    const remap = (id, list) => {
-      const old = BY_ID.get(id);
-      const rows = sizeRows(p, sel, list);
-      return (old && rows.find((r) => r.nombre === old.nombre) || rows[0])?.id || null;
-    };
-    if (p.pisos.length) {
-      sel.pisos = remap(sel.pisos, p.pisos);
-      sel.rellenos = sel.rellenos.map((id) => remap(id, p.rellenos));
+  const name = b.dataset.relleno;
+  const n = rellenoCount(p, sel);
+  sel.touchedRellenos = true;
+  if (b.dataset.step === "-1") {
+    const i = sel.rellenos.lastIndexOf(name);
+    if (i >= 0) sel.rellenos.splice(i, 1);
+  } else {
+    // Si ya están todos elegidos, el nuevo reemplaza al más viejo que sea distinto.
+    if (sel.rellenos.length >= n) {
+      const i = sel.rellenos.findIndex((x) => x !== name);
+      if (i < 0) return;
+      sel.rellenos.splice(i, 1);
     }
-  } else if (t.name === "deco") sel.deco = t.value;
-  else if (t.name === "pisos") {
-    sel.pisos = t.value;
-    while (sel.rellenos.length < rellenoCount(sel)) sel.rellenos.push(sel.rellenos[0] || p.rellenos[0]?.id);
-  } else if (t.name.startsWith("relleno")) sel.rellenos[Number(t.name.slice(7))] = t.value;
-  else if (t.name === "sizeRow") sel.size = t.value;
+    sel.rellenos.push(name);
+  }
   refreshConfig();
 });
 
@@ -360,7 +422,7 @@ document.querySelectorAll("#config .qty-btn").forEach((b) => b.addEventListener(
 }));
 
 $("#config-add").addEventListener("click", () => {
-  if (!current) return;
+  if (!current || missingRellenos() > 0) return;
   addToOrder(selectedIds(), current.qty);
   closeDialog($("#config"));
 });
@@ -395,18 +457,33 @@ function toast(msg) {
 }
 
 function describe(ids) {
-  const rows = ids.map((id) => BY_ID.get(id)).filter(Boolean);
+  let rows = ids.map((id) => BY_ID.get(id)).filter(Boolean);
   const p = PRODUCTS.find((x) => x.name === rows[0]?.prod);
   const parts = [];
+  const torre = rows.some((r) => r.kind === "torre");
+  if (torre) {
+    // En la torre las dos tortas llevan lo mismo: se describe una sola vez.
+    const sizes = uniq(rows.filter((r) => r.kind === "deco").map((r) => r.size));
+    parts.push(`torre de 2 pisos (${sizes.join(" abajo y ")} arriba)`);
+    rows = rows.filter((r) => r.kind !== "torre" && r.size === sizes[0]);
+  }
   const rellenos = [];
+  let deco = "";
   for (const r of rows) {
-    if (r.kind === "deco") { if (p && (p.decoSizes.length > 1 || p.pisos.length)) parts.push(r.size); parts.push(lowerFirst(r.nombre)); }
-    else if (r.kind === "pisos") parts.push(lowerFirst(r.nombre));
+    if (r.kind === "deco") { if (!torre && p && p.cfgSizes.length > 1) parts.unshift(r.size); deco = lowerFirst(r.nombre); }
+    else if (r.kind === "sabor") parts.push("bizcochuelo de " + lowerFirst(r.nombre));
+    else if (r.kind === "capas") parts.push(lowerFirst(r.nombre.split("·")[0].trim()));
     else if (r.kind === "relleno") rellenos.push(lowerFirst(r.nombre));
     else if (r.kind === "size" && p && p.sizes.length > 1) parts.push(lowerFirst(r.size));
   }
   if (rellenos.length === 1) parts.push("relleno: " + rellenos[0]);
-  if (rellenos.length > 1) parts.push(rellenos.map((x, i) => `relleno ${i + 1}: ${x}`).join(", "));
+  else if (rellenos.length > 1) {
+    parts.push("rellenos: " + uniq(rellenos).map((x) => {
+      const n = rellenos.filter((y) => y === x).length;
+      return n > 1 ? `${n} capas de ${x}` : x;
+    }).join(" y "));
+  }
+  if (deco) parts.push(deco);
   return { name: rows[0]?.prod || "", parts };
 }
 
@@ -519,12 +596,10 @@ document.querySelectorAll("dialog").forEach((d) => d.addEventListener("click", (
 
 /* ---------- tarjetas ---------- */
 $("#catalogo").addEventListener("click", (e) => {
-  const b = e.target.closest("button[data-product]");
+  const b = e.target.closest("[data-product]");
   if (!b) return;
   const p = PRODUCTS.find((x) => x.id === b.dataset.product);
-  if (!p) return;
-  if (p.hasOptions) { openConfig(p); return; }
-  addToOrder([p.base[0].id], 1);
+  if (p) openConfig(p);
 });
 
 /* ---------- arranque ---------- */

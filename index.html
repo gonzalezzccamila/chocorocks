@@ -21,38 +21,38 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
-  <header class="hero" id="inicio">
-    <div class="wrap">
-      <p class="logo"><img src="fotos/logo.png" alt="" width="40" height="40"> Chocorocks</p>
-    </div>
-    <div class="wrap hero-grid">
-      <div class="hero-text">
-        <h1>Pastelería de autor, hecha a pedido por dos hermanas.</h1>
-        <p class="lead">Nada sale de una vitrina: cada torta se hace para vos. Por eso pedimos 72 horas, y por eso vale la espera.</p>
-        <div class="hero-actions">
-          <a class="btn btn-primary btn-big" href="#catalogo">Ver tortas</a>
-          <a class="btn btn-ghost" id="btn-whatsapp" href="https://wa.me/5491165421200" target="_blank" rel="noopener">WhatsApp</a>
-          <a class="btn btn-ghost" id="btn-instagram" href="#" target="_blank" rel="noopener" hidden>Instagram</a>
+  <header class="top" id="inicio">
+    <img class="cover" src="fotos/portada.jpg" alt="Cheesecake de frutos rojos de Chocorocks, con frutillas y arándanos" width="787" height="1400" fetchpriority="high">
+    <div class="wrap profile">
+      <div class="profile-row">
+        <img class="avatar" src="fotos/logo.png" alt="" width="96" height="96">
+        <div class="profile-actions">
+          <a class="btn btn-primary btn-small" id="btn-whatsapp" href="https://wa.me/5491165421200" target="_blank" rel="noopener">WhatsApp</a>
+          <a class="btn btn-ghost btn-small" id="btn-instagram" href="#" target="_blank" rel="noopener" hidden>Instagram</a>
         </div>
-        <p class="pickup">Retiro en Belgrano</p>
-        <p class="hours" id="pickup-hours" hidden></p>
       </div>
-      <img class="hero-photo" src="fotos/portada.jpg" alt="Cheesecake de frutos rojos de Chocorocks, con frutillas y arándanos" width="787" height="1400" fetchpriority="high">
+      <h1>Chocorocks</h1>
+      <p class="lead">Pastelería de autor, hecha a pedido por dos hermanas. Nada sale de una vitrina: cada torta se hace para vos.</p>
+      <ul class="facts">
+        <li>Retiro en Belgrano</li>
+        <li>Pedí con 72 h de anticipación</li>
+        <li>Seña del 50%</li>
+      </ul>
+      <p class="hours" id="pickup-hours" hidden></p>
+      <details class="how" id="como-pedir">
+        <summary>Cómo pedir</summary>
+        <ol>
+          <li>Armá tu pedido acá y mandalo por WhatsApp.</li>
+          <li>Pedí con al menos 72 horas de anticipación.</li>
+          <li>Confirmamos la fecha y la reservás con una seña del 50% por transferencia.</li>
+          <li>Retirás en Belgrano, o lo mandás a buscar por Uber, Rappi o Cabify (envío a cargo del cliente).</li>
+        </ol>
+      </details>
     </div>
   </header>
-
-  <section class="wrap how" id="como-pedir">
-    <h2>Cómo pedir</h2>
-    <ol>
-      <li>Armá tu pedido acá y mandalo por WhatsApp.</li>
-      <li>Pedí con al menos 72 horas de anticipación.</li>
-      <li>Confirmamos la fecha y la reservás con una seña del 50% por transferencia.</li>
-      <li>Retirás en Belgrano, o lo mandás a buscar por Uber, Rappi o Cabify (envío a cargo del cliente).</li>
-    </ol>
-  </section>
 
   <nav class="tabs" aria-label="Categorías">
     <div class="wrap tabs-inner" id="tabs"></div>
@@ -74,23 +74,25 @@
     </button>
   </div>
 
-  <!-- Elegir opciones -->
-  <dialog class="sheet" id="config" aria-labelledby="config-title">
-    <form method="dialog" class="sheet-inner" id="config-form">
-      <div class="sheet-head">
+  <!-- Producto y opciones -->
+  <dialog class="sheet sheet-product" id="config" aria-labelledby="config-title">
+    <form method="dialog" class="product">
+      <button class="close close-float" type="submit" value="cancel" aria-label="Cerrar">Cerrar</button>
+      <div class="product-photo" id="config-photo" hidden><img src="" alt=""></div>
+      <div class="product-body">
+        <div class="tags" id="config-tags"></div>
         <h2 id="config-title"></h2>
-        <button class="close" type="submit" value="cancel" aria-label="Cerrar">Cerrar</button>
+        <p class="sheet-from" id="config-from"></p>
+        <p class="sheet-desc" id="config-desc"></p>
+        <div id="config-steps"></div>
       </div>
-      <p class="sheet-desc" id="config-desc"></p>
-      <p class="sheet-from" id="config-from"></p>
-      <div id="config-steps"></div>
       <div class="sheet-foot">
         <div class="qty" aria-label="Cantidad">
           <button type="button" class="qty-btn" data-qty="-1" aria-label="Uno menos">−</button>
           <output id="config-qty">1</output>
           <button type="button" class="qty-btn" data-qty="1" aria-label="Uno más">+</button>
         </div>
-        <button class="btn btn-primary btn-grow" type="button" id="config-add">Agregar · <span id="config-total">$0</span></button>
+        <button class="btn btn-primary btn-grow" type="button" id="config-add">Agregar</button>
       </div>
     </form>
   </dialog>
@@ -134,7 +136,7 @@
     </form>
   </dialog>
 
-  <script src="catalogo-respaldo.js"></script>
-  <script src="app.js"></script>
+  <script src="catalogo-respaldo.js?v=2"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>

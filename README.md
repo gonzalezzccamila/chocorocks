@@ -21,6 +21,15 @@ En la hoja **"Ajustes web"**, celda **B5** (amarilla). Hoy está en 3. Si lo pas
 
 En la misma hoja están las otras celdas amarillas: packaging, altura de referencia de las tortas, ml de jugo por limón y el molde de las recetas que no lo tienen cargado en Tortas.
 
+## Torta de bizcochuelo ("Armá tu torta")
+
+Es el producto destacado arriba de todo. Sus opciones están en "Ajustes web", en los dos configuradores del bizcochuelo (26 cm y 22 cm):
+
+- **Agregar o cambiar un relleno o una decoración:** cada fila tiene hasta dos ingredientes con su cantidad (pensada para 26 cm; la de 22 cm se escala sola). Si agregás una fila, copiala también en "Catálogo web" con el mismo ID.
+- **Rellenos sin dulce de leche** (chantilly, ganache, crema Oreo): reemplazan la capa de dulce de leche, así que se cobra solo la diferencia.
+- **Torre de 2 pisos:** es la torta de 26 cm abajo y la de 22 cm arriba, con lo mismo en las dos. El precio es la suma de las dos tortas más el "armado" de la fila `bizcochuelo-torre` (columna G, hoy en $0).
+- En el Sheet, "capas" son las capas de bizcochuelo de una torta y "torre" son dos tortas apiladas.
+
 ## Fotos
 
 - Los archivos están en la carpeta `fotos/` (JPG livianos, de unos 100 KB).
