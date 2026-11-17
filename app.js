@@ -5,7 +5,7 @@
 const CONFIG = {
   csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQNuXYt6_YuWe5-LYQ01ZZwf5EnLYTA2pSgpDP7eFhSVclMC9QmAK9DgTQMvBPw71Uq4gEdIrT4zQ2v/pub?gid=4002&single=true&output=csv",
   whatsapp: "5491165421200",
-  instagramUrl: "https://www.instagram.com/_chocorocks/",
+  instagramUrl: "https://www.instagram.com/chocorocks_/",
   horariosRetiro: "", // ej.: "Lunes a sábado de 10 a 20 hs · Domingos cerrado". Vacío = no se muestra.
   timeoutMs: 6000,
 };
