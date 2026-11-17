@@ -6,6 +6,18 @@
   <title>Chocorocks · Pastelería a pedido en Belgrano</title>
   <meta name="description" content="Pastelería de autor hecha a pedido por dos hermanas. Tortas, pavlovas y cajas para compartir. Pedidos por WhatsApp, retiro en Belgrano.">
   <meta name="theme-color" content="#EEF8F5">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="icono-180.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Chocorocks">
+  <meta property="og:title" content="Chocorocks · Pastelería a pedido en Belgrano">
+  <meta property="og:description" content="Pastelería de autor hecha a pedido por dos hermanas. Elegí tu torta y pedila por WhatsApp. Retiro en Belgrano.">
+  <meta property="og:url" content="https://gonzalezzccamila.github.io/chocorocks/">
+  <meta property="og:image" content="https://gonzalezzccamila.github.io/chocorocks/fotos/compartir.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_AR">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
@@ -14,15 +26,21 @@
 <body>
   <header class="hero" id="inicio">
     <div class="wrap">
-      <p class="logo">Chocorocks</p>
-      <h1>Pastelería de autor, hecha a pedido por dos hermanas.</h1>
-      <p class="lead">Nada sale de una vitrina: cada torta se hace para vos. Por eso pedimos 72 horas, y por eso vale la espera.</p>
-      <div class="hero-actions">
-        <a class="btn btn-primary" id="btn-whatsapp" href="https://wa.me/5491165421200" target="_blank" rel="noopener">Escribinos por WhatsApp</a>
-        <a class="btn btn-ghost" id="btn-instagram" href="#" target="_blank" rel="noopener" hidden>Instagram</a>
+      <p class="logo"><img src="fotos/logo.png" alt="" width="40" height="40"> Chocorocks</p>
+    </div>
+    <div class="wrap hero-grid">
+      <div class="hero-text">
+        <h1>Pastelería de autor, hecha a pedido por dos hermanas.</h1>
+        <p class="lead">Nada sale de una vitrina: cada torta se hace para vos. Por eso pedimos 72 horas, y por eso vale la espera.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary btn-big" href="#catalogo">Ver tortas</a>
+          <a class="btn btn-ghost" id="btn-whatsapp" href="https://wa.me/5491165421200" target="_blank" rel="noopener">WhatsApp</a>
+          <a class="btn btn-ghost" id="btn-instagram" href="#" target="_blank" rel="noopener" hidden>Instagram</a>
+        </div>
+        <p class="pickup">Retiro en Belgrano</p>
+        <p class="hours" id="pickup-hours" hidden></p>
       </div>
-      <p class="pickup">Retiro en Belgrano</p>
-      <p class="hours" id="pickup-hours" hidden></p>
+      <img class="hero-photo" src="fotos/portada.jpg" alt="Cheesecake de frutos rojos de Chocorocks, con frutillas y arándanos" width="787" height="1400" fetchpriority="high">
     </div>
   </header>
 

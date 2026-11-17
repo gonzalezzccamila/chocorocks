@@ -170,13 +170,35 @@ function cardHTML(p) {
     </article>`;
 }
 
+function photoSrc(p) { return /^https?:\/\//.test(p.foto) ? p.foto : "fotos/" + p.foto; }
+
+function rowHTML(p) {
+  const price = p.base.length > 1 ? `<small>desde</small> ${money(minPrice(p))}` : money(p.base[0].precio);
+  const tags = p.tags.length ? `<span class="tags">${p.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</span>` : "";
+  const meta = metaText(p);
+  const thumb = p.foto ? `<img class="row-thumb" src="${esc(photoSrc(p))}" alt="" loading="lazy" onerror="this.remove()">` : "";
+  return `
+    <li class="row">
+      ${thumb}
+      <div class="row-text">
+        <h3>${esc(p.name)}</h3>
+        ${meta ? `<p class="card-meta">${esc(meta)}</p>` : ""}
+        ${tags}
+        <p class="price">${price}</p>
+      </div>
+      <button class="btn ${p.hasOptions ? "btn-ghost" : "btn-primary"} btn-small" type="button" data-product="${esc(p.id)}" aria-label="${p.hasOptions ? "Elegir" : "Agregar"} ${esc(p.name)}">${p.hasOptions ? "Elegir" : "Agregar"}</button>
+    </li>`;
+}
+
 function render() {
   const main = $("#catalogo");
-  const special = PRODUCTS.filter((p) => p.tags.length);
-  const regular = PRODUCTS.filter((p) => !p.tags.length);
+  // Arriba, de 4 a 6 destacadas en tarjeta con foto. El resto, en lista compacta.
+  const top = PRODUCTS.filter((p) => p.rank > 0).slice(0, 6);
+  const rest = PRODUCTS.filter((p) => !top.includes(p));
+  const special = rest.filter((p) => p.tags.length);
+  const regular = rest.filter((p) => !p.tags.length);
   const sections = [];
-  const top = PRODUCTS.filter((p) => p.rank > 0).slice(0, 3);
-  if (top.length) sections.push({ ...TOP, list: top });
+  if (top.length) sections.push({ ...TOP, list: top, featured: true });
   const known = new Set(CATEGORIES.map((c) => c.name));
   const extra = [...new Set(regular.map((p) => p.cat))].filter((c) => !known.has(c))
     .map((name) => ({ name, id: slug(name), intro: "" }));
@@ -196,7 +218,9 @@ function render() {
       ${s.kicker ? `<p class="kicker">${esc(s.kicker)}</p>` : ""}
       <h2>${esc(s.name)}</h2>
       ${s.intro ? `<p class="cat-intro">${esc(s.intro)}</p>` : ""}
-      <div class="grid">${s.list.map(cardHTML).join("")}</div>
+      ${s.featured
+        ? `<div class="grid">${s.list.map(cardHTML).join("")}</div>`
+        : `<ul class="rows">${s.list.map(rowHTML).join("")}</ul>`}
     </section>`).join("");
   $("#tabs").innerHTML = sections.map((s) => `<a class="tab" href="#${esc(s.id)}">${esc(s.name)}</a>`).join("");
 }

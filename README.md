@@ -23,7 +23,11 @@ En la misma hoja están las otras celdas amarillas: packaging, altura de referen
 
 ## Fotos
 
-Las fotos van en la carpeta `fotos/` y se asignan desde el Sheet con una columna **"Foto"** en "Catálogo web" (el nombre del archivo o un link). Mientras no haya foto, la tarjeta se muestra sin foto.
+- Los archivos están en la carpeta `fotos/` (JPG livianos, de unos 100 KB).
+- Qué foto va con cada producto se decide en el Sheet: hoja **"Ajustes web"**, tabla amarilla **"FOTOS WEB"** (abajo de todo): nombre del producto → nombre del archivo. La columna "Foto" de "Catálogo web" la toma de ahí sola.
+- **Destacadas (arriba, en tarjeta con foto):** las de "Fijar arriba" en la hoja **Ventas** (hasta 6), más las más vendidas. El resto se muestra en lista compacta.
+- **Portada:** `fotos/portada.jpg`. **Vista previa al compartir el link:** `fotos/compartir.jpg`. **Ícono:** `favicon-32.png` e `icono-180.png`.
+- Todas las fotos originales están clasificadas en la carpeta "CR by Chocorocks" (`clasificacion.csv` y `_clasificadas/`).
 
 ## Otros datos de la página
 
