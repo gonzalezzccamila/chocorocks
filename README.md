@@ -46,7 +46,7 @@ En `app.js`, arriba de todo (`CONFIG`), sin tocar el HTML:
 
 - `whatsapp`, `instagramUrl` y `horariosRetiro`.
 - `portada` y `portadaAlt`: la imagen del banner y su texto alternativo.
-- `firma`: la línea debajo de "Chocorocks" sobre quién hace las tortas. Vacía, no se muestra.
+- `firma`: la frase debajo de "Chocorocks" sobre quién hace las tortas. Ocupa hasta 2 líneas en celular; si es más larga, se corta. Vacía, no se muestra.
 - `pasosDespues`: los pasos de "Qué pasa después" en el pedido. Con `[]`, no se muestra.
 
 ## Copia de respaldo

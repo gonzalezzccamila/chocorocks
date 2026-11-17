@@ -44,7 +44,8 @@ a { color: var(--turquoise-d); }
 .avatar { width: 96px; height: 96px; border-radius: 50%; border: 4px solid var(--surface); background: var(--surface); flex: none; }
 .profile-actions { display: flex; gap: 8px; padding-bottom: 4px; }
 .top h1 { font-size: 28px; line-height: 1.15; font-weight: 600; margin-top: 12px; }
-.firma { margin-top: 2px; font-size: var(--s1); font-weight: 500; color: var(--turquoise-d); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Firma: hasta 2 líneas; si el texto es más largo, se corta con "…" */
+.firma { margin-top: 2px; font-size: var(--s1); font-weight: 500; color: var(--turquoise-d); max-width: 52ch; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
 .lead { margin-top: 6px; color: var(--muted); max-width: 52ch; font-size: var(--s1); }
 .facts { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
 .facts li { font-size: 14px; font-weight: 500; padding: 4px 12px; border-radius: 999px; background: var(--mint); color: var(--ink); }

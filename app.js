@@ -13,7 +13,7 @@ const CONFIG = {
   portada: "fotos/portada.jpg?v=3",
   portadaAlt: "Logo CR by Chocorocks sobre una mesa de madera, con cookies de chocolate",
 
-  // Línea debajo del nombre, sobre quién hace las tortas. Una sola línea. Vacío = no se muestra.
+  // Frase debajo del nombre, sobre quién hace las tortas. Hasta 2 líneas en celular. Vacío = no se muestra.
   firma: "Por Victoria, pastelera profesional con años de oficio y experiencia.",
 
   // "Qué pasa después", debajo del botón de WhatsApp en el pedido. Vacío ([]) = no se muestra.
