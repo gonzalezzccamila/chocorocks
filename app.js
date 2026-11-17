@@ -8,6 +8,20 @@ const CONFIG = {
   instagramUrl: "https://www.instagram.com/chocorocks_/",
   horariosRetiro: "", // ej.: "Lunes a sábado de 10 a 20 hs · Domingos cerrado". Vacío = no se muestra.
   timeoutMs: 6000,
+
+  // Portada: archivo dentro de fotos/ (o URL) y su texto alternativo.
+  portada: "fotos/portada.jpg?v=3",
+  portadaAlt: "Logo CR by Chocorocks sobre una mesa de madera, con cookies de chocolate",
+
+  // Frase debajo del nombre, sobre quién hace las tortas. Hasta 2 líneas en celular. Vacío = no se muestra.
+  firma: "Por Victoria, pastelera profesional con años de oficio y experiencia.",
+
+  // "Qué pasa después", debajo del botón de WhatsApp en el pedido. Vacío ([]) = no se muestra.
+  pasosDespues: [
+    "Te respondemos en menos de 24 horas para confirmar la fecha.",
+    "Reservás con una seña del 50% por transferencia en las 5 horas siguientes a la confirmación.",
+    "Retirás en Belgrano o lo mandás a buscar por app.",
+  ],
 };
 
 const CATEGORIES = [
@@ -63,6 +77,9 @@ function parsePrice(raw) {
 /* Tipos de opción que pueden valer $0 porque se suman a otra. */
 const ADDON = /pisos|capas|relleno|sabor|torre/i;
 
+/* "a.jpg, b.jpg" → ["a.jpg", "b.jpg"]. El orden es el de la galería; la primera va en la tarjeta. */
+const splitFotos = (raw) => String(raw ?? "").split(",").map((f) => f.trim()).filter(Boolean);
+
 function toCatalog(text) {
   const table = parseCSV(text || "");
   const h = table.findIndex((r) => norm(r[0]) === "categoria");
@@ -83,7 +100,7 @@ function toCatalog(text) {
       por: get(r, c.por), tipo: get(r, c.tipo), nombre: get(r, c.nombre),
       precio: parsePrice(get(r, c.precio)),
       disp: norm(get(r, c.disp)), tags: get(r, c.tags).split(",").map((t) => t.trim()).filter(Boolean),
-      id: get(r, c.id), foto: get(r, c.foto), rank: Number(get(r, c.rank)) || 0,
+      id: get(r, c.id), fotos: splitFotos(get(r, c.foto)), rank: Number(get(r, c.rank)) || 0,
     }))
     .filter((r) => r.prod && r.id && r.disp === "si" && (r.precio > 0 || ADDON.test(r.tipo)));
 }
@@ -109,18 +126,19 @@ function buildProducts(rows) {
   for (const r of rows) {
     r.kind = kindOf(r.tipo);
     BY_ID.set(r.id, r);
-    if (!map.has(r.prod)) map.set(r.prod, { name: r.prod, cat: r.cat, desc: r.desc, tags: [], foto: "", rank: 0, rows: [] });
+    if (!map.has(r.prod)) map.set(r.prod, { name: r.prod, cat: r.cat, desc: r.desc, tags: [], fotos: [], rank: 0, rows: [] });
     const p = map.get(r.prod);
     p.rows.push(r);
     if (r.rank > 0 && (!p.rank || r.rank < p.rank)) p.rank = r.rank;
     r.tags.forEach((t) => p.tags.includes(t) || p.tags.push(t));
-    if (!p.foto && r.foto) p.foto = r.foto;
+    if (!p.fotos.length && r.fotos.length) p.fotos = r.fotos;
   }
   const order = [...map.values()];
   // Los más pedidos van primero dentro de su categoría; el resto mantiene el orden del Sheet.
   const byRank = (a, b) => (a.rank || Infinity) - (b.rank || Infinity) || order.indexOf(a) - order.indexOf(b);
   return order.sort(byRank).map((p) => {
     p.id = slug(p.name);
+    p.foto = p.fotos[0] || ""; // la de la tarjeta
     const of = (k) => p.rows.filter((r) => r.kind === k);
     p.decos = of("deco"); p.capas = of("capas"); p.rellenos = of("relleno"); p.sabores = of("sabor");
     p.torre = of("torre")[0] || null;
@@ -145,7 +163,8 @@ function metaText(p) {
 }
 
 /* ---------- catálogo ---------- */
-const photoSrc = (p) => (/^https?:\/\//.test(p.foto) ? p.foto : "fotos/" + p.foto + "?v=3");
+const fotoUrl = (f) => (/^https?:\/\//.test(f) ? f : "fotos/" + f + "?v=3");
+const photoSrc = (p) => fotoUrl(p.foto);
 const priceHTML = (p) => (p.base.length > 1 ? `<small>desde</small> ${money(minPrice(p))}` : money(p.base[0].precio));
 
 function tileHTML(p) {
@@ -399,14 +418,65 @@ function openConfig(p) {
   const multi = p.base.length > 1;
   const meta = multi ? "" : metaText(p);
   $("#config-from").textContent = (multi ? "Desde " + money(minPrice(p)) : money(p.base[0].precio)) + (meta ? " · " + meta : "");
-  const photo = $("#config-photo");
-  photo.hidden = !p.foto;
-  if (p.foto) { const img = photo.querySelector("img"); img.src = photoSrc(p); img.alt = p.name; }
+  renderGallery(p);
   $("#config-tags").innerHTML = p.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("");
   refreshConfig();
   showDialog($("#config"));
   $("#config").scrollTop = 0;
 }
+
+/* ---------- galería de fotos de la ficha ----------
+   0 fotos: no hay área de imagen. 1: foto sola. 2 o más: carrusel con puntos.
+   Si una foto no carga se saca y se recalculan los puntos; si fallan todas, queda como 0. */
+const gallery = $("#config-photo");
+const track = $("#gallery-track");
+const dots = $("#gallery-dots");
+
+function renderGallery(p) {
+  const total = p.fotos.length;
+  gallery.hidden = total === 0;
+  track.scrollLeft = 0;
+  track.innerHTML = p.fotos.map((f, i) => `
+    <div class="slide"><img src="${esc(fotoUrl(f))}" alt="${esc(total > 1 ? `${p.name}, foto ${i + 1} de ${total}` : p.name)}"
+      ${i === 0 ? "" : 'loading="lazy"'} decoding="async"></div>`).join("");
+  track.querySelectorAll("img").forEach((img) => img.addEventListener("error", () => {
+    img.parentNode.remove();
+    relabelGallery(p.name);
+  }, { once: true }));
+  relabelGallery(p.name);
+}
+
+function relabelGallery(name) {
+  const imgs = [...track.querySelectorAll("img")];
+  const total = imgs.length;
+  gallery.hidden = total === 0;
+  gallery.classList.toggle("is-multi", total > 1);
+  imgs.forEach((img, i) => { img.alt = total > 1 ? `${name}, foto ${i + 1} de ${total}` : name; });
+  dots.hidden = total < 2;
+  dots.innerHTML = total < 2 ? "" : imgs.map((_, i) =>
+    `<button type="button" class="dot" data-slide="${i}" aria-label="Ver foto ${i + 1} de ${total}"><span></span></button>`).join("");
+  updateDots();
+}
+
+function currentSlide() {
+  const w = track.clientWidth || 1;
+  return Math.round(track.scrollLeft / w);
+}
+
+function updateDots() {
+  const all = [...dots.querySelectorAll(".dot")];
+  if (!all.length) return;
+  const i = Math.min(currentSlide(), all.length - 1);
+  all.forEach((d, k) => d.setAttribute("aria-current", k === i ? "true" : "false"));
+  dots.setAttribute("aria-label", `Foto ${i + 1} de ${all.length}`);
+}
+
+let dotsFrame = 0;
+track.addEventListener("scroll", () => { cancelAnimationFrame(dotsFrame); dotsFrame = requestAnimationFrame(updateDots); }, { passive: true });
+dots.addEventListener("click", (e) => {
+  const b = e.target.closest(".dot");
+  if (b) track.scrollTo({ left: Number(b.dataset.slide) * track.clientWidth, behavior: "smooth" });
+});
 
 $("#config-steps").addEventListener("change", (e) => {
   const t = e.target;
@@ -653,6 +723,19 @@ function show(rows, signature) {
     if ($("#config").open) refreshConfig();
   }
 }
+
+/* Textos que se editan solo en CONFIG: portada, firma y "qué pasa después". */
+function applyConfigTexts() {
+  const cover = $("#cover");
+  if (CONFIG.portada) { cover.src = CONFIG.portada; cover.alt = CONFIG.portadaAlt || ""; cover.hidden = false; }
+  const firma = $("#firma");
+  firma.textContent = CONFIG.firma || "";
+  firma.hidden = !CONFIG.firma;
+  const pasos = (CONFIG.pasosDespues || []).filter(Boolean);
+  $("#after-list").innerHTML = pasos.map((t) => `<li>${esc(t)}</li>`).join("");
+  $("#after").hidden = !pasos.length;
+}
+applyConfigTexts();
 
 async function init() {
   if (CONFIG.instagramUrl) { const ig = $("#btn-instagram"); ig.href = CONFIG.instagramUrl; ig.hidden = false; }

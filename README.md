@@ -33,6 +33,8 @@ Es el producto destacado arriba de todo. Sus opciones están en "Ajustes web", e
 ## Fotos
 
 - Los archivos están en la carpeta `fotos/` (JPG livianos, de unos 100 KB).
+- **Varias fotos por producto:** en la tabla "FOTOS WEB" podés poner más de un archivo separado por coma (`key-lime-pie.jpg, key-lime-pie-2.jpg`). El orden es el de la galería de la ficha, y la primera es la de la tarjeta. Con una sola foto se ve como siempre. Si una foto no carga, se saca sola de la galería.
+- Peso recomendado: hasta 250 KB por foto y 400 KB la portada.
 - Qué foto va con cada producto se decide en el Sheet: hoja **"Ajustes web"**, tabla amarilla **"FOTOS WEB"** (abajo de todo): nombre del producto → nombre del archivo. La columna "Foto" de "Catálogo web" la toma de ahí sola.
 - **Destacadas (arriba, en tarjeta con foto):** las de "Fijar arriba" en la hoja **Ventas** (hasta 6), más las más vendidas. El resto se muestra en lista compacta.
 - **Portada:** `fotos/portada.jpg`. **Vista previa al compartir el link:** `fotos/compartir.jpg`. **Ícono:** `favicon-32.png` e `icono-180.png`.
@@ -40,7 +42,12 @@ Es el producto destacado arriba de todo. Sus opciones están en "Ajustes web", e
 
 ## Otros datos de la página
 
-En `app.js`, arriba de todo (`CONFIG`): número de WhatsApp, link de Instagram y horarios de retiro.
+En `app.js`, arriba de todo (`CONFIG`), sin tocar el HTML:
+
+- `whatsapp`, `instagramUrl` y `horariosRetiro`.
+- `portada` y `portadaAlt`: la imagen del banner y su texto alternativo.
+- `firma`: la frase debajo de "Chocorocks" sobre quién hace las tortas. Ocupa hasta 2 líneas en celular; si es más larga, se corta. Vacía, no se muestra.
+- `pasosDespues`: los pasos de "Qué pasa después" en el pedido. Con `[]`, no se muestra.
 
 ## Copia de respaldo
 

@@ -21,11 +21,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
   <header class="top" id="inicio">
-    <img class="cover" src="fotos/portada.jpg?v=3" alt="Logo CR by Chocorocks sobre una mesa de madera, con cookies de chocolate" width="1248" height="832" fetchpriority="high">
+    <img class="cover" id="cover" alt="" width="1248" height="832" fetchpriority="high" hidden>
     <div class="wrap profile">
       <div class="profile-row">
         <img class="avatar" src="fotos/logo.png" alt="" width="96" height="96">
@@ -35,6 +35,7 @@
         </div>
       </div>
       <h1>Chocorocks</h1>
+      <p class="firma" id="firma" hidden></p>
       <p class="lead">Pastelería de autor, hecha a pedido por dos hermanas. Nada sale de una vitrina: cada torta se hace para vos.</p>
       <ul class="facts">
         <li>Retiro en Belgrano</li>
@@ -78,7 +79,10 @@
   <dialog class="sheet sheet-product" id="config" aria-labelledby="config-title">
     <form method="dialog" class="product">
       <button class="close close-float" type="submit" value="cancel" aria-label="Cerrar">Cerrar</button>
-      <div class="product-photo" id="config-photo" hidden><img src="" alt=""></div>
+      <div class="product-photo gallery" id="config-photo" hidden>
+        <div class="gallery-track" id="gallery-track"></div>
+        <div class="gallery-dots" id="gallery-dots" role="group" aria-label="Foto 1 de 1" hidden></div>
+      </div>
       <div class="product-body">
         <div class="tags" id="config-tags"></div>
         <h2 id="config-title"></h2>
@@ -133,10 +137,14 @@
       <p class="order-note">Los precios incluyen todo. Se reserva con una seña del 50% por transferencia.</p>
       <p class="form-error" id="order-error" role="alert" hidden></p>
       <a class="btn btn-primary btn-block" id="send-order" href="#" target="_blank" rel="noopener">Pedir por WhatsApp</a>
+      <div class="after" id="after" hidden>
+        <p class="after-title">Qué pasa después</p>
+        <ol class="after-list" id="after-list"></ol>
+      </div>
     </form>
   </dialog>
 
   <script src="catalogo-respaldo.js?v=3"></script>
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
