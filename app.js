@@ -145,7 +145,7 @@ function metaText(p) {
 }
 
 /* ---------- catálogo ---------- */
-const photoSrc = (p) => (/^https?:\/\//.test(p.foto) ? p.foto : "fotos/" + p.foto);
+const photoSrc = (p) => (/^https?:\/\//.test(p.foto) ? p.foto : "fotos/" + p.foto + "?v=3");
 const priceHTML = (p) => (p.base.length > 1 ? `<small>desde</small> ${money(minPrice(p))}` : money(p.base[0].precio));
 
 function tileHTML(p) {
@@ -163,6 +163,29 @@ function tileHTML(p) {
         <span class="price">${priceHTML(p)}</span>
       </span>
     </button>`;
+}
+
+function rowHTML(p) {
+  const meta = metaText(p);
+  const tags = p.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("");
+  return `
+    <li><button class="row" type="button" data-product="${esc(p.id)}">
+      <span class="row-text">
+        <span class="row-name">${esc(p.name)}</span>
+        ${meta ? `<span class="row-meta">${esc(meta)}</span>` : ""}
+        ${tags ? `<span class="tags">${tags}</span>` : ""}
+      </span>
+      <span class="price">${priceHTML(p)}</span>
+      <span class="row-chev" aria-hidden="true">›</span>
+    </button></li>`;
+}
+
+/* Las que tienen foto van en tarjetas; las que no, en lista compacta debajo. */
+function listHTML(list, carousel) {
+  if (carousel) return `<div class="carousel">${list.map(tileHTML).join("")}</div>`;
+  const withPhoto = list.filter((p) => p.foto), without = list.filter((p) => !p.foto);
+  return (withPhoto.length ? `<div class="grid">${withPhoto.map(tileHTML).join("")}</div>` : "")
+    + (without.length ? `<ul class="rows">${without.map(rowHTML).join("")}</ul>` : "");
 }
 
 function builderHTML(p) {
@@ -209,7 +232,7 @@ function render() {
     <section class="cat" id="${esc(s.id)}">
       <h2>${esc(s.name)} <span class="count">(${s.list.length})</span></h2>
       ${s.intro ? `<p class="cat-intro">${esc(s.intro)}</p>` : ""}
-      <div class="${s.carousel ? "carousel" : "grid"}">${s.list.map(tileHTML).join("")}</div>
+      ${listHTML(s.list, s.carousel)}
     </section>`).join("");
   const tabs = [...(builder ? [{ id: BUILDER.id, name: BUILDER.tab }] : []), ...sections];
   $("#tabs").innerHTML = tabs.map((s) => `<a class="tab" href="#${esc(s.id)}">${esc(s.name)}</a>`).join("");
