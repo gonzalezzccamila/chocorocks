@@ -10,11 +10,11 @@ const CONFIG = {
   timeoutMs: 6000,
 
   // Portada: archivo dentro de fotos/ (o URL) y su texto alternativo.
-  portada: "fotos/portada.jpg?v=3",
-  portadaAlt: "Logo CR by Chocorocks sobre una mesa de madera, con cookies de chocolate",
+  portada: "fotos/portada-torta-de-pera.jpg",
+  portadaAlt: "Torta de pera hecha por Victoria, con plantas de fondo",
 
   // Frase debajo del nombre, sobre quién hace las tortas. Hasta 2 líneas en celular. Vacío = no se muestra.
-  firma: "Por Victoria, pastelera profesional con años de oficio y experiencia.",
+  firma: "Pastelería de Victoria",
 
   // "Qué pasa después", debajo del botón de WhatsApp en el pedido. Vacío ([]) = no se muestra.
   pasosDespues: [
