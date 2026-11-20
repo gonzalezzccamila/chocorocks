@@ -8,6 +8,9 @@ const CONFIG = {
   instagramUrl: "https://www.instagram.com/chocorocks_/",
   horariosRetiro: "", // ej.: "Lunes a sábado de 10 a 20 hs · Domingos cerrado". Vacío = no se muestra.
   timeoutMs: 6000,
+  // Dirección de la aplicación web (Apps Script) que anota cada pedido en la hoja Pedidos y te avisa por mail.
+  // Vacío = la web solo manda el WhatsApp, como antes.
+  pedidosUrl: "https://script.google.com/macros/s/AKfycbweBKFquVtGaa8eRL8qCJBSz7TjZZdRUTYM0MUmeD6j2grLA9cwbRxPfMqECpkUheth/exec",
 
   // Portada: archivo dentro de fotos/ (o URL) y su texto alternativo.
   portada: "fotos/portada-torta-de-pera.jpg",
@@ -595,14 +598,16 @@ function prettyDate(iso) {
   return `${day} ${pad(d)}/${pad(m)}`;
 }
 function orderForm() {
+  const name = $("#order-name").value.trim();
   const date = $("#order-date").value;
   const delivery = document.querySelector('input[name="delivery"]:checked')?.value || "";
   const note = $("#order-note").value.trim();
   let error = "";
   if (!ORDER.length) error = "Todavía no agregaste nada.";
+  else if (!name) error = "Decinos tu nombre.";
   else if (!date) error = "Elegí la fecha para la que lo necesitás.";
   else if (date < minDate()) error = "Necesitamos al menos 72 horas. Elegí una fecha a partir del " + prettyDate(minDate()) + ".";
-  return { date, delivery, note, error };
+  return { name, date, delivery, note, error };
 }
 
 function whatsappLink() {
@@ -616,7 +621,7 @@ function whatsappLink() {
     f.delivery ? `Entrega: ${f.delivery}` : "",
     f.note ? `Comentario: ${f.note}` : "",
   ].filter(Boolean).join("\n");
-  const text = `Hola, Chocorocks. Quiero hacer este pedido:\n\n${lines.join("\n")}\n\nTotal: ${money(orderTotal())}\n\n${extra}\n\n¿Tienen lugar para esa fecha?`;
+  const text = `Hola, Chocorocks. Soy ${f.name}. Quiero hacer este pedido:\n\n${lines.join("\n")}\n\nTotal: ${money(orderTotal())}\n\n${extra}\n\n¿Tienen lugar para esa fecha?`;
   return `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(text)}`;
 }
 
@@ -666,15 +671,35 @@ $("#order-list").addEventListener("click", (e) => {
   saveOrder();
   renderOrder();
 });
+/* Anota el pedido en la planilla (hoja Pedidos) sin frenar el envío por WhatsApp. */
+function registrarPedido(f) {
+  if (!CONFIG.pedidosUrl) return;
+  const datos = {
+    cliente: f.name,
+    fecha: f.date,
+    entrega: f.delivery.startsWith("Envío") ? "Envío por app" : f.delivery,
+    comentario: f.note,
+    items: ORDER.map((it) => {
+      const d = describe(it.ids);
+      return { producto: d.name, detalle: d.parts.join(", "), cantidad: it.qty, ids: it.ids, precio: unitPrice(it.ids) * it.qty };
+    }),
+  };
+  const body = JSON.stringify(datos);
+  try {
+    if (navigator.sendBeacon && navigator.sendBeacon(CONFIG.pedidosUrl, new Blob([body], { type: "text/plain" }))) return;
+  } catch { /* sigue con fetch */ }
+  fetch(CONFIG.pedidosUrl, { method: "POST", mode: "no-cors", keepalive: true, headers: { "Content-Type": "text/plain" }, body }).catch(() => {});
+}
+
 $("#send-order").addEventListener("click", (e) => {
   const f = orderForm();
-  if (!f.error) { $("#send-order").href = whatsappLink(); return; }
+  if (!f.error) { $("#send-order").href = whatsappLink(); registrarPedido(f); return; }
   e.preventDefault();
   if (!ORDER.length) return;
   const err = $("#order-error");
   err.textContent = f.error;
   err.hidden = false;
-  $("#order-date").focus();
+  (f.error === "Decinos tu nombre." ? $("#order-name") : $("#order-date")).focus();
 });
 ["input", "change"].forEach((ev) => $("#order").addEventListener(ev, (e) => {
   if (e.target.closest(".field, .step")) updateSend();
