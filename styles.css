@@ -258,3 +258,8 @@ a { color: var(--turquoise-d); }
 .row .price { font-size: var(--s1); white-space: nowrap; }
 .row-chev { color: var(--turquoise-d); font-size: 22px; line-height: 1; }
 .grid + .rows { margin-top: 12px; }
+
+/* Navidad */
+.navidad { background: var(--mint); border-radius: var(--radius); padding: 18px 16px 16px; margin-top: 20px; }
+.navidad h2 { margin-top: 2px; }
+.navidad-estado { display: inline-block; margin: 10px 0 0; padding: 4px 12px; border-radius: 999px; background: var(--turquoise); color: #fff; font-size: var(--s1); font-weight: 600; }
