@@ -23,8 +23,20 @@ const CONFIG = {
   pasosDespues: [
     "Te respondemos en menos de 24 horas para confirmar la fecha.",
     "Reservás con una seña del 50% por transferencia en las 5 horas siguientes a la confirmación.",
-    "Retirás en Belgrano o lo mandás a buscar por app.",
+    "Retirás en Belgrano o te lo mandamos por motomensajería (el costo depende de la zona).",
   ],
+
+  // Sección de Navidad, arriba de todo. activa: false = no se muestra.
+  // completa: true cuando ya no entran más pedidos de Navidad (la capacidad es interna, no se anuncia).
+  navidad: {
+    activa: true,
+    titulo: "Navidad de verano",
+    texto: "En Navidad hace 35 grados. Después de comer, un postre frío: pavlova de frutos rojos, key lime o cheesecake de frutos rojos, hechos por Vicky. Se retiran o se envían el 23 o el 24 de diciembre.",
+    productos: ["Pavlova de frutos rojos", "Key lime pie", "Cheesecake de frutos rojos"],
+    completa: false,
+    abre: "2026-12-04",   // antes de esta fecha dice "Pedidos desde el viernes 4 de diciembre"
+    cierra: "2026-12-20", // último día de pedidos; después la sección se oculta
+  },
 };
 
 const CATEGORIES = [
@@ -228,6 +240,28 @@ function builderHTML(p) {
     </section>`;
 }
 
+/* Navidad: pedidos con fecha de apertura y cierre. Los productos salen del catálogo (precio y foto en vivo). */
+const NAVIDAD_ID = "navidad";
+function navidadHTML() {
+  const n = CONFIG.navidad;
+  if (!n || !n.activa) return "";
+  const hoy = new Date().toISOString().slice(0, 10);
+  if (n.cierra && hoy > n.cierra) return "";
+  const list = n.productos.map((name) => PRODUCTS.find((p) => p.name === name)).filter(Boolean);
+  if (!list.length) return "";
+  const estado = n.completa ? "Agenda de Navidad completa. ¡Gracias!"
+    : n.abre && hoy < n.abre ? "Pedidos desde el viernes 4 de diciembre."
+    : "Pedidos hasta el 20 de diciembre.";
+  return `
+    <section class="cat navidad" id="${NAVIDAD_ID}">
+      <p class="kicker">Para la mesa de Navidad</p>
+      <h2>${esc(n.titulo)}</h2>
+      <p class="cat-intro">${esc(n.texto)}</p>
+      <p class="navidad-estado">${esc(estado)}</p>
+      <div class="grid">${list.map(tileHTML).join("")}</div>
+    </section>`;
+}
+
 function render() {
   const main = $("#catalogo");
   const builder = PRODUCTS.find((p) => p.builder);
@@ -258,8 +292,9 @@ function render() {
     </section>`;
   // Orden: primero las favoritas (las clásicas), después la torta personalizada y el resto.
   const first = sections[0] && sections[0].carousel ? [sections.shift()] : [];
-  main.innerHTML = first.map(sectionHTML).join("") + (builder ? builderHTML(builder) : "") + sections.map(sectionHTML).join("");
-  const tabs = [...first, ...(builder ? [{ id: BUILDER.id, name: BUILDER.tab }] : []), ...sections];
+  const navidad = navidadHTML();
+  main.innerHTML = navidad + first.map(sectionHTML).join("") + (builder ? builderHTML(builder) : "") + sections.map(sectionHTML).join("");
+  const tabs = [...(navidad ? [{ id: NAVIDAD_ID, name: "Navidad" }] : []), ...first, ...(builder ? [{ id: BUILDER.id, name: BUILDER.tab }] : []), ...sections];
   $("#tabs").innerHTML = tabs.map((s) => `<a class="tab" href="#${esc(s.id)}">${esc(s.name)}</a>`).join("");
 }
 
