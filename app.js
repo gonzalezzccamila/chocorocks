@@ -27,16 +27,15 @@ const CONFIG = {
   ],
 
   // Sección de Navidad, arriba de todo. activa: false = no se muestra.
-  // "quedan" se actualiza a mano cada vez que se confirma una torta de Navidad.
+  // completa: true cuando ya no entran más pedidos de Navidad (la capacidad es interna, no se anuncia).
   navidad: {
     activa: true,
-    titulo: "La Navidad de Chocorocks",
-    texto: "Este año Vicky hace solo 5 tortas para Navidad. Se reservan acá, en la web, y se retiran el 23 o el 24 de diciembre.",
-    productos: ["Pavlova de frutos rojos", "Key lime pie"],
-    cupo: 5,
-    quedan: 5,
-    abre: "2026-12-02",   // antes de esta fecha dice "Abre el martes 2 de diciembre"
-    cierra: "2026-12-20", // después de esta fecha la sección se oculta
+    titulo: "Navidad de verano",
+    texto: "En Navidad hace 35 grados. Después de comer, un postre frío: pavlova de frutos rojos, key lime o cheesecake de frutos rojos, hechos por Vicky. Se retiran o se envían el 23 o el 24 de diciembre.",
+    productos: ["Pavlova de frutos rojos", "Key lime pie", "Cheesecake de frutos rojos"],
+    completa: false,
+    abre: "2026-12-04",   // antes de esta fecha dice "Pedidos desde el viernes 4 de diciembre"
+    cierra: "2026-12-20", // último día de pedidos; después la sección se oculta
   },
 };
 
@@ -241,7 +240,7 @@ function builderHTML(p) {
     </section>`;
 }
 
-/* Navidad: cupo chico, con fecha de apertura y cierre. Los productos salen del catálogo (precio y foto en vivo). */
+/* Navidad: pedidos con fecha de apertura y cierre. Los productos salen del catálogo (precio y foto en vivo). */
 const NAVIDAD_ID = "navidad";
 function navidadHTML() {
   const n = CONFIG.navidad;
@@ -250,11 +249,12 @@ function navidadHTML() {
   if (n.cierra && hoy > n.cierra) return "";
   const list = n.productos.map((name) => PRODUCTS.find((p) => p.name === name)).filter(Boolean);
   if (!list.length) return "";
-  const estado = n.abre && hoy < n.abre ? "Abre el martes 2 de diciembre."
-    : n.quedan > 0 ? `Quedan ${n.quedan} de ${n.cupo}.` : "Cupo completo. ¡Gracias!";
+  const estado = n.completa ? "Agenda de Navidad completa. ¡Gracias!"
+    : n.abre && hoy < n.abre ? "Pedidos desde el viernes 4 de diciembre."
+    : "Pedidos hasta el 20 de diciembre.";
   return `
     <section class="cat navidad" id="${NAVIDAD_ID}">
-      <p class="kicker">Cupo de ${n.cupo} tortas</p>
+      <p class="kicker">Para la mesa de Navidad</p>
       <h2>${esc(n.titulo)}</h2>
       <p class="cat-intro">${esc(n.texto)}</p>
       <p class="navidad-estado">${esc(estado)}</p>
